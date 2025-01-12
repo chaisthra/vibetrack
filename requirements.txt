@@ -1,0 +1,10 @@
+streamlit
+requests
+python-dotenv
+plotly
+pandas
+groq
+openai>=1.40.0
+sounddevice
+soundfile
+numpy 

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vibetrack"
+version = "0.1.0"
+description = "A natural language-based activity tracking application"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn>=0.24.0",
+    "python-dotenv>=1.0.0",
+    "elevenlabs>=0.2.26",
+    "groq>=0.3.1",
+    "pydantic>=2.5.0",
+    "python-multipart>=0.0.6",
+    "redis>=5.0.1",
+    "asyncio>=3.4.3",
+    "aiohttp>=3.9.1",
+    "passlib>=1.7.4",
+    "python-jose[cryptography]>=3.3.0",
+    "bcrypt>=4.0.1",
+    "email-validator>=2.0.0"
+]
+
+[tool.setuptools]
+packages = ["backend"] 

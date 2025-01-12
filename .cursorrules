@@ -1,0 +1,121 @@
+### Cursor Rules for VibeTrack Development
+
+#### Role and Focus
+You are an expert in conversational AI, activity tracking applications, and data visualization systems. Your role is to guide and assist in the development of **VibeTrack**, an application designed for natural language-based activity logging, processing, and visualization. The focus is on seamless user interactions, efficient backend integration, and insightful visualizations.
+
+---
+
+### Frontend Development (Streamlit)
+#### Key Principles:
+- Implement a **three-panel layout** in Streamlit, separating:
+  - Conversation history (left)
+  - Chat interface with voice agent (center)
+  - Visualization panel with refresh button (right)
+- Use **Streamlit Components** for UI widgets and interactions.
+- Ensure the app is responsive and accessible across devices.
+- Optimize performance by limiting unnecessary UI re-renders.
+
+#### Implementation Details:
+- Use Streamlit's `st.session_state` to manage user context and conversation history.
+- For voice logging, implement a **draggable circular button** for start/stop recording.
+- Incorporate **Plotly** for visualizations:
+  - Pie charts for category distribution
+  - Timeline for recent activities
+  - Activity summaries
+- Add ARIA roles and keyboard navigation to improve accessibility.
+
+#### Error Handling:
+- Display user-friendly error messages when API calls fail.
+- Provide fallback text-based logging if voice features are unavailable.
+- Handle authentication errors gracefully with clear feedback.
+
+---
+
+### Backend Development (FastAPI)
+#### Key Principles:
+- Design an efficient RESTful API to handle voice/text processing, data storage, and visualizations.
+- Implement secure user authentication using JWT tokens.
+- Ensure proper error handling and validation.
+
+#### Core Features:
+1. **Authentication System**:
+   - User registration and login endpoints
+   - JWT token generation and validation
+   - Secure password hashing with bcrypt
+   - User profile management
+
+2. **Voice Processing Integration**:
+   - Use ElevenLabs for voice input and ensure accurate transcription.
+   - Implement conversation management with proper session handling.
+   - Support API key configuration for voice features.
+
+3. **Data Storage**:
+   - Store user data, activities, and categories in JSON format.
+   - Implement backup strategies for data integrity.
+   - Ensure proper data isolation between users.
+
+4. **Query Processing**:
+   - Support natural language queries for activity history retrieval.
+   - Enable advanced queries with category filtering.
+   - Implement user-specific data access controls.
+
+---
+
+### Data Visualization
+#### Key Principles:
+- Use **interactive charts** with filters for category-based views.
+- Incorporate **color coding** for categories to improve readability.
+- Provide both daily and weekly summaries in the visualization panel.
+
+#### Implementation:
+- Use Plotly with Streamlit to render:
+  - Pie charts for activity distribution
+  - Timeline for recent activities
+  - Category-based summaries
+- Ensure charts update seamlessly via the refresh button.
+
+---
+
+### Security and Scalability
+#### Key Principles:
+- Store sensitive user data securely using encryption.
+- Use **rate limiting** to prevent abuse of backend endpoints.
+- Optimize FastAPI for high-concurrency use cases.
+- Ensure complete isolation of user data and activities.
+- Implement proper session management and token expiration.
+
+#### Implementation:
+- Secure storage of API keys and user credentials.
+- Use JWT for authentication token management.
+- Implement proper CORS and security headers.
+- Ensure secure password hashing with bcrypt.
+- Validate user permissions for all data access.
+- Implement user-specific data stores.
+- Add session cleanup for expired tokens.
+
+### Multi-User Support
+#### Key Principles:
+- Ensure complete data isolation between users.
+- Implement role-based access control.
+- Support concurrent user sessions.
+
+#### Implementation:
+- User-specific activity logs and categories.
+- Separate storage for each user's data.
+- Session management with token expiration.
+- Concurrent access handling.
+
+---
+
+### User Experience
+#### Key Principles:
+- Maintain a consistent dark theme throughout the application.
+- Provide clear feedback for user actions.
+- Ensure smooth transitions between voice and text modes.
+
+#### Implementation:
+- Use gradient backgrounds for interactive elements.
+- Implement pulse animations for recording state.
+- Provide clear status messages for voice interactions.
+- Ensure proper form validation and error feedback.
+
