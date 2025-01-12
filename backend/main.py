@@ -1,13 +1,10 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 import os
 import signal
 from dotenv import load_dotenv
-from elevenlabs.client import ElevenLabs
-from elevenlabs.conversational_ai.conversation import Conversation
-from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
 import groq
 import json
 from datetime import datetime, timedelta
@@ -67,7 +64,6 @@ app.add_middleware(
 
 # Initialize clients
 groq_client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
-eleven_labs = None  # Initialize on demand with user's API key
 
 # Constants
 AGENT_ID = "fznwkKVgHrHX2VrqsPr4"
@@ -339,144 +335,35 @@ async def log_text_activity(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/start-conversation")
-async def start_conversation(
-    request: Request,
-    current_user: UserProfile = Depends(get_current_user)
-):
-    global conversation, conversation_thread
+async def start_conversation(api_key: str = Form(...)):
     try:
-        # Get API key from user profile or request headers
-        api_key = current_user.elevenlabs_key or request.headers.get("X-API-KEY")
-        if not api_key:
-            raise HTTPException(status_code=400, detail="ElevenLabs API key not provided")
-        
-        print(f"\n=== Starting conversation with ElevenLabs ===")
-        print(f"Agent ID: {AGENT_ID}")
-        
-        # End any existing conversation
-        if conversation:
-            try:
-                print("Ending existing conversation...")
-                conversation.end_session()
-                if conversation_thread and conversation_thread.is_alive():
-                    conversation_thread.join(timeout=5)
-            except Exception as e:
-                print(f"Error ending existing conversation: {e}")
-            conversation = None
-            conversation_thread = None
-        
-        # Initialize ElevenLabs client
-        print("Initializing ElevenLabs client...")
+        global eleven_labs
         eleven_labs = ElevenLabs(api_key=api_key)
-        
-        # Initialize conversation with callbacks
-        print("Setting up conversation...")
         conversation = Conversation(
-            client=eleven_labs,
-            agent_id=AGENT_ID,
-            requires_auth=True,
+            eleven_labs,
+            agent_id="fznwkKVgHrHX2VrqsPr4",
             audio_interface=DefaultAudioInterface(),
-            callback_agent_response=lambda response: print(f"Agent: {response}"),
-            callback_agent_response_correction=lambda original, corrected: print(f"Agent correction: {original} -> {corrected}"),
-            callback_user_transcript=lambda transcript: handle_voice_transcript(transcript),
-            callback_latency_measurement=lambda latency: print(f"Latency: {latency}ms")
         )
-        
-        print("Starting conversation session...")
-        # Start conversation in a separate thread
-        def run_conversation():
-            try:
-                conversation.start_session()
-            except Exception as e:
-                print(f"Error in conversation thread: {e}")
-                import traceback
-                print(f"Stack trace:\n{traceback.format_exc()}")
-        
-        conversation_thread = threading.Thread(target=run_conversation)
-        conversation_thread.daemon = True
-        conversation_thread.start()
-        
-        print("✓ Conversation started successfully")
-        return {
-            "status": "success",
-            "message": "Conversation started successfully"
-        }
+        conversation.start()
+        return {"status": "success", "message": "Conversation started"}
     except Exception as e:
-        print(f"❌ Error starting conversation: {str(e)}")
-        import traceback
-        print(f"Stack trace:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/end-conversation")
-async def end_conversation(
-    request: Request,
-    current_user: UserProfile = Depends(get_current_user)
-):
-    global conversation, conversation_thread
+async def end_conversation():
     try:
-        if not conversation:
-            return {
-                "status": "error",
-                "message": "No active conversation to end"
-            }
-        
-        # Get API key from user profile or request headers
-        api_key = current_user.elevenlabs_key or request.headers.get("X-API-KEY")
-        if not api_key:
-            raise HTTPException(status_code=400, detail="ElevenLabs API key not provided")
-        
-        try:
-            # End the session and wait for it to complete
-            conversation.end_session()
-            conversation_id = conversation.wait_for_session_end()
-            
-            if conversation_thread and conversation_thread.is_alive():
-                conversation_thread.join(timeout=5)
-            
-            # Fetch conversation history
-            history = await fetch_conversation_history(conversation_id, api_key)
-            if history:
-                # Process each user message in the conversation
-                activities = []
-                for entry in history.get("transcript", []):
-                    if entry["role"] == "user":
-                        processed = process_activity_text(
-                            entry["message"],
-                            source="voice",
-                            context=entry.get("context")
-                        )
-                        activities.append(processed)
-                
-                # Store the complete conversation
-                if activities:
-                    add_conversation(
-                        user_id=current_user.id,
-                        conversation_type="voice",
-                        raw_conversation=json.dumps(history["transcript"]),
-                        activities=activities,
-                        summary={
-                            "identified_categories": list(set(a["category"]["name"] for a in activities)),
-                            "totalDuration": sum(a["duration"] for a in activities),
-                            "highlightPoints": sum((a["metadata"]["keywords"] for a in activities), []),
-                            "category_confidence": sum(a["category"].get("confidence", 0) for a in activities) / len(activities)
-                        },
-                        conversation_id=conversation_id
-                    )
-            
-            conversation = None
-            conversation_thread = None
-            
-            return {
-                "status": "success",
-                "message": "Conversation ended successfully",
-                "conversation_id": conversation_id
-            }
-        except Exception as e:
-            print(f"Error ending conversation: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-            
+        if eleven_labs:
+            eleven_labs = None
+        return {"status": "success", "message": "Conversation ended"}
     except Exception as e:
-        print(f"Error in end_conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/conversation-history")
+async def get_conversation_history():
+    try:
+        conversations = load_conversations()
+        return {"conversations": conversations}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/categories")
@@ -601,54 +488,6 @@ def handle_shutdown(signum, frame):
         conversation.end_session()
 
 signal.signal(signal.SIGINT, handle_shutdown)
-
-@app.get("/conversation-history")
-async def get_conversation_history(
-    current_user: UserProfile = Depends(get_current_user)
-):
-    try:
-        # Get conversations from storage
-        conversations = get_conversations(current_user.username)
-        
-        # Format the response
-        history = []
-        for conv in conversations:
-            entry = {
-                "timestamp": conv.get("timestamp"),
-                "type": conv.get("type"),
-                "text": conv.get("raw_text") or conv.get("processed_text", ""),
-                "category": conv.get("category", "uncategorized"),
-                "source": conv.get("source", "text"),
-                "metadata": conv.get("metadata", {
-                    "keywords": [],
-                    "context_clues": []
-                })
-            }
-            
-            # If it's a voice conversation, try to fetch additional details from ElevenLabs
-            if conv.get("type") == "voice" and conv.get("conversation_id"):
-                try:
-                    elevenlabs_history = await fetch_conversation_history(
-                        conv["conversation_id"],
-                        current_user.elevenlabs_key
-                    )
-                    if elevenlabs_history:
-                        entry["voice_transcript"] = elevenlabs_history.get("transcript", [])
-                except Exception as e:
-                    print(f"Error fetching ElevenLabs history: {e}")
-            
-            history.append(entry)
-        
-        # Sort by timestamp, most recent first
-        history.sort(key=lambda x: x["timestamp"], reverse=True)
-        
-        return {
-            "status": "success",
-            "data": history
-        }
-    except Exception as e:
-        print(f"Error fetching conversation history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/activity-history")
 async def get_activity_history(current_user: dict = Depends(get_current_user)):
