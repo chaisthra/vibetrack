@@ -259,7 +259,7 @@ if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
 # API endpoint
-API_URL = "http://localhost:8000/api"
+API_URL = "/api"  # Using relative path for same-domain deployment
 
 def get_auth_header():
     if st.session_state.auth_token:
