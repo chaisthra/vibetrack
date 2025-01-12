@@ -49,7 +49,12 @@ conversation_thread = None
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="VibeTrack API")
+app = FastAPI(
+    title="VibeTrack API",
+    description="Backend API for VibeTrack activity tracking application",
+    version="1.0.0",
+    root_path="/api"
+)
 
 # Configure CORS
 app.add_middleware(
