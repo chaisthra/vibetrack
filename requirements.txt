@@ -5,8 +5,6 @@ plotly
 pandas
 groq
 openai>=1.40.0
-
-# Optional dependencies for voice input
-sounddevice; platform_system != "Linux"
-soundfile; platform_system != "Linux"
-numpy; platform_system != "Linux" 
+sounddevice
+soundfile
+numpy 

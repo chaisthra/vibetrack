@@ -10,19 +10,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import time
 from groq import Groq
-
-# Try to import sound-related libraries
-VOICE_INPUT_AVAILABLE = False
-try:
-    import sounddevice as sd
-    import soundfile as sf
-    import numpy as np
-    from openai import OpenAI
-    VOICE_INPUT_AVAILABLE = True
-except OSError:
-    print("Sound libraries not available - voice input will be disabled")
-except ImportError:
-    print("Sound libraries not available - voice input will be disabled")
+import sounddevice as sd
+import soundfile as sf
+import numpy as np
+from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
@@ -30,10 +21,8 @@ load_dotenv()
 # Initialize Groq client
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Initialize OpenAI client only if voice input is available
-openai_client = None
-if VOICE_INPUT_AVAILABLE:
-    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Configure page
 st.set_page_config(
@@ -270,7 +259,7 @@ if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
 # API endpoint
-API_URL = "/api"  # Using relative path for same-domain deployment
+API_URL = "http://localhost:8000/api"
 
 def get_auth_header():
     if st.session_state.auth_token:
@@ -638,26 +627,23 @@ else:
                         st.error("Error logging activity")
         
         with voice_tab:
-            if not VOICE_INPUT_AVAILABLE:
-                st.warning("Voice input is not available in this environment. Please use text input instead.")
-            else:
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.write("Click 'Record' to start recording your activity (10 seconds)")
-                with col2:
-                    if st.button("🎤 Record", key="record_button"):
-                        # Record audio
-                        audio_data, sample_rate = record_audio()
-                        if audio_data is not None:
-                            # Transcribe audio
-                            transcribed_text = transcribe_audio(audio_data, sample_rate)
-                            if transcribed_text:
-                                st.info(f"Transcribed text: {transcribed_text}")
-                                # Log the transcribed activity
-                                if send_text_activity(transcribed_text):
-                                    st.success("Voice activity logged successfully!")
-                                else:
-                                    st.error("Error logging voice activity")
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write("Click 'Record' to start recording your activity (10 seconds)")
+            with col2:
+                if st.button("🎤 Record", key="record_button"):
+                    # Record audio
+                    audio_data, sample_rate = record_audio()
+                    if audio_data is not None:
+                        # Transcribe audio
+                        transcribed_text = transcribe_audio(audio_data, sample_rate)
+                        if transcribed_text:
+                            st.info(f"Transcribed text: {transcribed_text}")
+                            # Log the transcribed activity
+                            if send_text_activity(transcribed_text):
+                                st.success("Voice activity logged successfully!")
+                            else:
+                                st.error("Error logging voice activity")
         
 
         st.divider()
