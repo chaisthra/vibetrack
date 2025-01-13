@@ -19,8 +19,8 @@ load_dotenv()
 # Initialize Groq client
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client with correct parameters
+openai_client = OpenAI()  # It will automatically use OPENAI_API_KEY from environment
 
 # Configure page
 st.set_page_config(
