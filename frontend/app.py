@@ -10,8 +10,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import time
 from groq import Groq
+import sounddevice as sd
+import soundfile as sf
 import numpy as np
-import openai
+from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
@@ -20,7 +22,7 @@ load_dotenv()
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Initialize OpenAI client
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Configure page
 st.set_page_config(
@@ -492,14 +494,14 @@ def transcribe_audio(audio_data, sample_rate):
         
         # Transcribe using OpenAI Whisper
         with open(temp_file, "rb") as audio_file:
-            transcript = openai.Audio.transcribe(
-                "whisper-1",
-                audio_file
+            transcript = openai_client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file
             )
         
         # Clean up temp file
         os.remove(temp_file)
-        return transcript["text"]
+        return transcript.text
     except Exception as e:
         st.error(f"Error transcribing audio: {str(e)}")
         return None
@@ -708,7 +710,7 @@ else:
             <!DOCTYPE html>
             <html>
             <head>
-                <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
                     .widget-container {
                         width: 100%;
@@ -717,13 +719,11 @@ else:
                         justify-content: center;
                         align-items: center;
                         background: transparent;
-                        margin: 20px 0;
                     }
                     elevenlabs-convai {
                         width: 100%;
                         height: 100%;
                         border-radius: 8px;
-                        background: transparent;
                     }
                 </style>
             </head>
@@ -743,7 +743,6 @@ else:
                     src="https://elevenlabs.io/convai-widget/index.js" 
                     async 
                     type="text/javascript"
-                    crossorigin="anonymous"
                 ></script>
             </body>
             </html>
