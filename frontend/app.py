@@ -708,7 +708,7 @@ else:
             <!DOCTYPE html>
             <html>
             <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';">
                 <style>
                     .widget-container {
                         width: 100%;
@@ -717,11 +717,13 @@ else:
                         justify-content: center;
                         align-items: center;
                         background: transparent;
+                        margin: 20px 0;
                     }
                     elevenlabs-convai {
                         width: 100%;
                         height: 100%;
                         border-radius: 8px;
+                        background: transparent;
                     }
                 </style>
             </head>
@@ -741,6 +743,7 @@ else:
                     src="https://elevenlabs.io/convai-widget/index.js" 
                     async 
                     type="text/javascript"
+                    crossorigin="anonymous"
                 ></script>
             </body>
             </html>
