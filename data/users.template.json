@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "username": "sample_user",
+      "email": "sample@example.com",
+      "hashed_password": "sample_hashed_password",
+      "created_at": "2024-01-01T00:00:00",
+      "settings": {
+        "theme": "dark",
+        "notifications_enabled": true
+      }
+    }
+  ]
+} 
