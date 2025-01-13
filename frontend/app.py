@@ -258,8 +258,8 @@ if "user" not in st.session_state:
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
-# API endpoint
-API_URL = "http://localhost:8000/api"
+# API endpoints
+API_URL = "http://localhost:8000"
 
 def get_auth_header():
     if st.session_state.auth_token:

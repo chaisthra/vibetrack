@@ -5,9 +5,16 @@ from typing import Optional, List, Dict
 import os
 import signal
 from dotenv import load_dotenv
+from elevenlabs.client import ElevenLabs
+from elevenlabs.conversational_ai.conversation import Conversation
+from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
 import groq
 import json
 from datetime import datetime, timedelta
+import asyncio
+import threading
+import pyaudio
+import aiohttp
 import sys
 from pathlib import Path
 
@@ -35,15 +42,14 @@ from backend.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 
+# Initialize global variables
+conversation = None
+conversation_thread = None
+
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(
-    title="VibeTrack API",
-    description="Backend API for VibeTrack activity tracking application",
-    version="1.0.0",
-    root_path="/api"
-)
+app = FastAPI(title="VibeTrack API")
 
 # Configure CORS
 app.add_middleware(
@@ -54,15 +60,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Groq client
+# Initialize clients
 groq_client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
+eleven_labs = None  # Initialize on demand with user's API key
 
 # Constants
+AGENT_ID = "fznwkKVgHrHX2VrqsPr4"
 PREDEFINED_CATEGORIES = ["Work", "Health", "Learning", "Personal", "Creative", "Social"]
-
-# Initialize global variables
-conversation = None
-conversation_thread = None
 
 # Models for request/response
 class ActivityLog(BaseModel):

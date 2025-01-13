@@ -4,14 +4,7 @@ python-dotenv
 plotly
 pandas
 groq
-openai
+openai>=1.40.0
 sounddevice
 soundfile
-numpy
-python-multipart
-bcrypt
-fastapi
-uvicorn
-pydantic
-python-jose[cryptography]
-passlib 
+numpy 
