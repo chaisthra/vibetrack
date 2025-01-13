@@ -10,8 +10,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import time
 from groq import Groq
-import sounddevice as sd
-import soundfile as sf
 import numpy as np
 from openai import OpenAI
 
