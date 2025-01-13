@@ -8,10 +8,6 @@ from dotenv import load_dotenv
 import groq
 import json
 from datetime import datetime, timedelta
-import asyncio
-import threading
-import pyaudio
-import aiohttp
 import sys
 from pathlib import Path
 
@@ -40,8 +36,6 @@ from backend.auth import (
 )
 
 # Initialize global variables
-conversation = None
-conversation_thread = None
 
 # Load environment variables
 load_dotenv()
@@ -162,66 +156,6 @@ Activity text: {text}"""
             "timestamp": datetime.now().isoformat()
         }
 
-def handle_voice_transcript(transcript: str):
-    """Handle transcribed voice input"""
-    try:
-        log_entry = process_activity_text(transcript, source="voice")
-        storage.add_activity_log(log_entry)
-        print(f"Voice log added: {log_entry}")
-    except Exception as e:
-        print(f"Error handling voice transcript: {e}")
-
-async def fetch_conversation_history(conversation_id: str, api_key: str) -> dict:
-    """Fetch conversation history from ElevenLabs API"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"https://api.elevenlabs.io/v1/convai/conversations/{conversation_id}",
-                headers={"xi-api-key": api_key}
-            ) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    print(f"Error fetching conversation: {await response.text()}")
-                    return None
-    except Exception as e:
-        print(f"Error fetching conversation history: {e}")
-        return None
-
-def initialize_conversation(api_key: str = None):
-    global conversation, eleven_labs
-    try:
-        if api_key:
-            eleven_labs = ElevenLabs(api_key=api_key)
-        elif os.getenv("ELEVENLABS_API_KEY"):
-            eleven_labs = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
-        else:
-            raise ValueError("No API key provided")
-        
-        # Initialize conversation with callbacks
-        conversation = Conversation(
-            # API client and agent ID
-            client=eleven_labs,
-            agent_id=AGENT_ID,
-            
-            # Assume auth is required when API_KEY is set
-            requires_auth=True,
-            
-            # Use the default audio interface
-            audio_interface=DefaultAudioInterface(),
-            
-            # Simple callbacks that print the conversation to the console
-            callback_agent_response=lambda response: print(f"Agent: {response}"),
-            callback_agent_response_correction=lambda original, corrected: print(f"Agent: {original} -> {corrected}"),
-            callback_user_transcript=handle_voice_transcript,
-            callback_latency_measurement=lambda latency: print(f"Latency: {latency}ms")
-        )
-        print("Conversation initialized successfully")
-        return True
-    except Exception as e:
-        print(f"Error initializing conversation: {e}")
-        return False
-
 # User authentication endpoints
 @app.post("/auth/signup", response_model=Token)
 async def signup(user: UserCreate):
@@ -332,30 +266,6 @@ async def log_text_activity(
         return {"status": "success", "data": conversation}
     except Exception as e:
         print(f"Error in log_text_activity: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/start-conversation")
-async def start_conversation(api_key: str = Form(...)):
-    try:
-        global eleven_labs
-        eleven_labs = ElevenLabs(api_key=api_key)
-        conversation = Conversation(
-            eleven_labs,
-            agent_id="fznwkKVgHrHX2VrqsPr4",
-            audio_interface=DefaultAudioInterface(),
-        )
-        conversation.start()
-        return {"status": "success", "message": "Conversation started"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/end-conversation")
-async def end_conversation():
-    try:
-        if eleven_labs:
-            eleven_labs = None
-        return {"status": "success", "message": "Conversation ended"}
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/conversation-history")
@@ -483,9 +393,7 @@ async def create_backup():
 
 # Clean shutdown handler
 def handle_shutdown(signum, frame):
-    global conversation
-    if conversation:
-        conversation.end_session()
+    pass
 
 signal.signal(signal.SIGINT, handle_shutdown)
 
