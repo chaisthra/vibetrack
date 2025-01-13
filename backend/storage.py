@@ -3,98 +3,66 @@ import os
 from typing import List, Dict, Optional
 from datetime import datetime
 
-# Ensure data directory exists
+# Define data directory and file paths
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-print(f"\n[Storage] Data directory path: {DATA_DIR}")
-os.makedirs(DATA_DIR, exist_ok=True)
-print(f"[Storage] Data directory created/exists: {os.path.exists(DATA_DIR)}")
-
-# Define file paths
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 CONVERSATIONS_FILE = os.path.join(DATA_DIR, "conversations.json")
 CATEGORIES_FILE = os.path.join(DATA_DIR, "categories.json")
 
-def initialize_data_files():
-    """Initialize data files with default structure if they don't exist"""
-    print(f"\n[Storage] Initializing data files...")
-    
-    # Initialize users.json
-    if not os.path.exists(USERS_FILE):
-        print(f"[Storage] Creating users.json at: {USERS_FILE}")
-        try:
-            with open(USERS_FILE, 'w') as f:
-                json.dump({"users": []}, f)
-            print("[Storage] users.json created successfully")
-        except Exception as e:
-            print(f"[Storage] Error creating users.json: {str(e)}")
-    else:
-        print(f"[Storage] users.json already exists at: {USERS_FILE}")
-    
-    # Initialize conversations.json
-    if not os.path.exists(CONVERSATIONS_FILE):
-        print(f"[Storage] Creating conversations.json at: {CONVERSATIONS_FILE}")
-        try:
-            with open(CONVERSATIONS_FILE, 'w') as f:
-                json.dump([], f)
-            print("[Storage] conversations.json created successfully")
-        except Exception as e:
-            print(f"[Storage] Error creating conversations.json: {str(e)}")
-    else:
-        print(f"[Storage] conversations.json already exists at: {CONVERSATIONS_FILE}")
-    
-    # Initialize categories.json
-    if not os.path.exists(CATEGORIES_FILE):
-        print(f"[Storage] Creating categories.json at: {CATEGORIES_FILE}")
-        try:
-            default_categories = {
-                "Work": 0,
-                "Health": 0,
-                "Learning": 0,
-                "Personal": 0,
-                "Creative": 0,
-                "Social": 0
-            }
-            with open(CATEGORIES_FILE, 'w') as f:
-                json.dump(default_categories, f)
-            print("[Storage] categories.json created successfully")
-        except Exception as e:
-            print(f"[Storage] Error creating categories.json: {str(e)}")
-    else:
-        print(f"[Storage] categories.json already exists at: {CATEGORIES_FILE}")
-
-# Initialize data files at module load
-initialize_data_files()
+# Ensure data directory exists
+os.makedirs(DATA_DIR, exist_ok=True)
 
 def load_users() -> List[Dict]:
     """Load users from JSON file"""
-    print(f"\n[Storage] Loading users from: {USERS_FILE}")
     try:
-        if not os.path.exists(USERS_FILE):
-            print("[Storage] Users file does not exist")
-            return []
-        with open(USERS_FILE, 'r') as f:
-            data = json.load(f)
-            users = data.get("users", []) if isinstance(data, dict) else data
-            print(f"[Storage] Successfully loaded {len(users)} users")
-            return users
+        if os.path.exists(USERS_FILE):
+            print(f"Loading users from: {USERS_FILE}")
+            with open(USERS_FILE, 'r') as f:
+                data = json.load(f)
+                print(f"Loaded data: {json.dumps(data, indent=2)}")
+                if isinstance(data, dict) and "users" in data:
+                    users = data["users"]
+                    print(f"Found {len(users)} users in database")
+                    return users
+                else:
+                    print("No 'users' key found in data")
+                    return []
+        else:
+            print(f"Users file not found at: {USERS_FILE}")
+            # Initialize with demo users if file doesn't exist
+            demo_users = {
+                "users": [
+                    {
+                        "username": "demo_user",
+                        "email": "demo@vibetrack.com",
+                        "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN9V3UF9T3HJGQZsuHhJi",
+                        "created_at": datetime.utcnow().isoformat(),
+                        "settings": {
+                            "theme": "dark",
+                            "notifications_enabled": True
+                        },
+                        "elevenlabs_key": None,
+                        "is_demo": True
+                    }
+                ]
+            }
+            save_users(demo_users["users"])
+            return demo_users["users"]
     except Exception as e:
-        print(f"[Storage] Error loading users: {str(e)}")
+        print(f"Error loading users: {str(e)}")
         import traceback
-        print(f"[Storage] Stack trace:\n{traceback.format_exc()}")
+        print(f"Stack trace:\n{traceback.format_exc()}")
         return []
 
 def save_users(users: List[Dict]):
     """Save users to JSON file"""
-    print(f"\n[Storage] Saving {len(users)} users to: {USERS_FILE}")
     try:
-        os.makedirs(os.path.dirname(USERS_FILE), exist_ok=True)
+        # Always save in the nested format
+        data = {"users": users}
         with open(USERS_FILE, 'w') as f:
-            json.dump({"users": users}, f, indent=2)
-        print("[Storage] Users saved successfully")
+            json.dump(data, f, indent=2)
     except Exception as e:
-        print(f"[Storage] Error saving users: {str(e)}")
-        import traceback
-        print(f"[Storage] Stack trace:\n{traceback.format_exc()}")
+        print(f"Error saving users: {e}")
 
 def get_user_by_username(username: str) -> Optional[Dict]:
     """Get user by username"""

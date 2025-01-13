@@ -1,24 +1,19 @@
 import uuid
 import bcrypt
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt  # Import PyJWT directly
 import json
-import os
 
 from .storage import load_users, save_users, get_user_by_username
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 
-# JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
+# Security configurations
+SECRET_KEY = "your-secret-key-here"  # In production, use a secure secret key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -47,45 +42,49 @@ class TokenData(BaseModel):
     username: Optional[str] = None
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
-    print(f"\n[Auth] Verifying password...")
     try:
-        result = pwd_context.verify(plain_password, hashed_password)
-        print(f"[Auth] Password verification {'successful' if result else 'failed'}")
-        return result
+        # Add debug logging
+        print(f"Verifying password for length: {len(plain_password)}")
+        
+        # Ensure we're working with bytes
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+        
+        plain_password_bytes = plain_password.encode('utf-8')
+        
+        # Add more debug logging
+        print(f"Hashed password length: {len(hashed_password)}")
+        print(f"Plain password bytes length: {len(plain_password_bytes)}")
+        
+        return bcrypt.checkpw(plain_password_bytes, hashed_password)
     except Exception as e:
-        print(f"[Auth] Error verifying password: {str(e)}")
+        print(f"Password verification error: {str(e)}")
+        print(f"Hashed password: {hashed_password[:10]}... (truncated)")
         return False
 
-def get_password_hash(password: str) -> str:
-    """Generate password hash"""
-    print(f"\n[Auth] Generating password hash...")
-    try:
-        hashed = pwd_context.hash(password)
-        print(f"[Auth] Password hash generated successfully")
-        return hashed
-    except Exception as e:
-        print(f"[Auth] Error generating password hash: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error generating password hash"
-        )
-
-def create_access_token(data: dict) -> str:
-    """Create JWT access token"""
-    print(f"\n[Auth] Creating access token for user: {data.get('sub')}")
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     try:
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
         to_encode.update({"exp": expire})
-        token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-        print(f"[Auth] Access token created successfully")
-        return token
+        # Use PyJWT's encode method with explicit string encoding
+        encoded_jwt = jwt.encode(
+            to_encode,
+            SECRET_KEY,
+            algorithm=ALGORITHM
+        )
+        # PyJWT might return bytes in some versions, so ensure we return a string
+        if isinstance(encoded_jwt, bytes):
+            return encoded_jwt.decode('utf-8')
+        return encoded_jwt
     except Exception as e:
-        print(f"[Auth] Error creating access token: {str(e)}")
+        print(f"Token creation error: {str(e)}")  # Debug log
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error creating access token"
+            detail="Could not create access token"
         )
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
@@ -113,62 +112,113 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     del user_response["hashed_password"]
     return user_response
 
-def authenticate_user(username: str, password: str) -> Optional[Dict]:
-    """Authenticate a user"""
-    print(f"\n[Auth] Attempting to authenticate user: {username}")
+def get_password_hash(password: str) -> str:
+    """Hash a password using bcrypt"""
     try:
-        user = get_user_by_username(username)
-        if not user:
-            print(f"[Auth] User not found: {username}")
-            return None
-        
-        print(f"[Auth] User found, verifying password...")
-        if not verify_password(password, user["hashed_password"]):
-            print(f"[Auth] Invalid password for user: {username}")
-            return None
-        
-        print(f"[Auth] Authentication successful for user: {username}")
-        return user
+        # Generate salt and hash password
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        # Return hash as string
+        return hashed.decode('utf-8')
     except Exception as e:
-        print(f"[Auth] Error during authentication: {str(e)}")
-        import traceback
-        print(f"[Auth] Stack trace:\n{traceback.format_exc()}")
-        return None
-
-def create_user(username: str, email: str, password: str) -> Dict:
-    """Create a new user"""
-    print(f"\n[Auth] Attempting to create new user: {username}")
-    try:
-        # Check if username already exists
-        existing_user = get_user_by_username(username)
-        if existing_user:
-            print(f"[Auth] Username already exists: {username}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already registered"
-            )
-        
-        # Create new user
-        users = load_users()
-        hashed_password = get_password_hash(password)
-        new_user = {
-            "username": username,
-            "email": email,
-            "hashed_password": hashed_password,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        users.append(new_user)
-        save_users(users)
-        print(f"[Auth] User created successfully: {username}")
-        return new_user
-    except HTTPException as he:
-        print(f"[Auth] HTTP Exception during user creation: {str(he.detail)}")
-        raise he
-    except Exception as e:
-        print(f"[Auth] Error creating user: {str(e)}")
-        import traceback
-        print(f"[Auth] Stack trace:\n{traceback.format_exc()}")
+        print(f"Error hashing password: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error creating user"
-        ) 
+            detail="Could not process password"
+        )
+
+def create_user(user_data: dict) -> dict:
+    try:
+        # Check if username already exists
+        existing_user = get_user_by_username(user_data["username"])
+        if existing_user:
+            raise ValueError("Username already registered")
+            
+        # Hash the password
+        hashed_password = get_password_hash(user_data["password"])
+        
+        # Create new user object
+        new_user = {
+            "username": user_data["username"],
+            "email": user_data["email"],
+            "hashed_password": hashed_password,
+            "created_at": datetime.utcnow().isoformat(),
+            "settings": {
+                "theme": "dark",
+                "notifications_enabled": True
+            },
+            "elevenlabs_key": None
+        }
+        
+        if "full_name" in user_data:
+            new_user["full_name"] = user_data["full_name"]
+            
+        # Load existing users and add new user
+        users = load_users()
+        if not isinstance(users, list):
+            users = []
+        users.append(new_user)
+        
+        # Save updated users list
+        save_users(users)
+        
+        # Return user data without password
+        user_response = new_user.copy()
+        del user_response["hashed_password"]
+        return user_response
+        
+    except ValueError as ve:
+        print(f"User creation error: {str(ve)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except Exception as e:
+        print(f"User creation error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create user"
+        )
+
+def authenticate_user(username: str, password: str) -> Optional[dict]:
+    try:
+        print(f"\n=== Authentication attempt for user: {username} ===")
+        
+        # Get user data
+        user = get_user_by_username(username)
+        if not user:
+            print("❌ User not found in database")
+            return None
+        
+        print("✓ User found in database")
+        print(f"User data: {json.dumps({k:v for k,v in user.items() if k != 'hashed_password'}, indent=2)}")
+        
+        # Verify password
+        print("\nAttempting password verification...")
+        if not verify_password(password, user["hashed_password"]):
+            print("❌ Password verification failed")
+            return None
+        
+        print("✓ Password verified successfully")
+        
+        # Update last login
+        print("\nUpdating last login timestamp...")
+        users = load_users()
+        for u in users:
+            if u["username"] == username:
+                u["last_login"] = datetime.utcnow().isoformat()
+                break
+        save_users(users)
+        print("✓ Last login updated")
+        
+        # Return user without hashed password
+        user_response = user.copy()
+        del user_response["hashed_password"]
+        print("\n=== Authentication successful ===")
+        return user_response
+        
+    except Exception as e:
+        print(f"❌ Authentication error: {str(e)}")
+        import traceback
+        print(f"Stack trace:\n{traceback.format_exc()}")
+        return None 

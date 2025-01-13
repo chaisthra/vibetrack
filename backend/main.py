@@ -157,76 +157,62 @@ Activity text: {text}"""
         }
 
 # User authentication endpoints
-@app.post("/auth/signup")
-async def signup(
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    """Sign up a new user"""
-    print(f"\n[API] Signup request received for username: {username}")
+@app.post("/auth/signup", response_model=Token)
+async def signup(user: UserCreate):
     try:
-        user = create_user(username, email, password)
-        print(f"[API] User created successfully: {username}")
+        print(f"Received signup request for username: {user.username}")  # Debug log
+        
+        # Convert Pydantic model to dict
+        user_data = user.dict()
+        
+        # Create user and store in JSON
+        created_user = create_user(user_data)
+        print(f"User created successfully: {created_user['username']}")  # Debug log
         
         # Generate access token
-        access_token = create_access_token({"sub": username})
-        print(f"[API] Access token generated for user: {username}")
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": created_user["username"]},
+            expires_delta=access_token_expires
+        )
+        print(f"Access token generated for user: {created_user['username']}")  # Debug log
         
         return {
-            "access_token": access_token,
+            "access_token": access_token, 
             "token_type": "bearer",
-            "user": user
+            "message": "User created successfully"
         }
+        
+    except ValueError as ve:
+        print(f"Validation error during signup: {str(ve)}")  # Debug log
+        raise HTTPException(
+            status_code=400,
+            detail=str(ve)
+        )
     except HTTPException as he:
-        print(f"[API] HTTP Exception during signup: {he.detail}")
+        print(f"HTTP Exception during signup: {str(he)}")  # Debug log
         raise he
     except Exception as e:
-        print(f"[API] Error during signup: {str(e)}")
-        import traceback
-        print(f"[API] Stack trace:\n{traceback.format_exc()}")
+        print(f"Unexpected error during signup: {str(e)}")  # Debug log
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error during signup"
+            status_code=500,
+            detail="An unexpected error occurred during signup"
         )
 
-@app.post("/auth/login")
-async def login(
-    username: str = Form(...),
-    password: str = Form(...)
-):
-    """Login a user"""
-    print(f"\n[API] Login request received for username: {username}")
-    try:
-        user = authenticate_user(username, password)
-        if not user:
-            print(f"[API] Authentication failed for user: {username}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        # Generate access token
-        access_token = create_access_token({"sub": username})
-        print(f"[API] Access token generated for user: {username}")
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": user
-        }
-    except HTTPException as he:
-        print(f"[API] HTTP Exception during login: {he.detail}")
-        raise he
-    except Exception as e:
-        print(f"[API] Error during login: {str(e)}")
-        import traceback
-        print(f"[API] Stack trace:\n{traceback.format_exc()}")
+@app.post("/auth/login", response_model=Token)
+async def login(user_data: UserLogin):
+    user = authenticate_user(user_data.username, user_data.password)
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error during login"
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+    access_token = create_access_token(
+        data={"sub": user["username"]},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/users/me")
 async def read_users_me(current_user: UserProfile = Depends(get_current_user)):
