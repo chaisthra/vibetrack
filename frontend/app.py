@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import time
 from groq import Groq
 import numpy as np
-from openai import OpenAI
+import openai
 
 # Load environment variables
 load_dotenv()
@@ -20,7 +20,7 @@ load_dotenv()
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Initialize OpenAI client
-openai_client = OpenAI()  # It will automatically use OPENAI_API_KEY from environment
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Configure page
 st.set_page_config(
@@ -492,15 +492,14 @@ def transcribe_audio(audio_data, sample_rate):
         
         # Transcribe using OpenAI Whisper
         with open(temp_file, "rb") as audio_file:
-            transcript = openai_client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                response_format="text"
+            transcript = openai.Audio.transcribe(
+                "whisper-1",
+                audio_file
             )
         
         # Clean up temp file
         os.remove(temp_file)
-        return transcript
+        return transcript["text"]
     except Exception as e:
         st.error(f"Error transcribing audio: {str(e)}")
         return None
