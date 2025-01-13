@@ -20,7 +20,10 @@ load_dotenv()
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Initialize OpenAI client with correct parameters
-openai_client = OpenAI()  # It will automatically use OPENAI_API_KEY from environment
+openai_client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url="https://api.openai.com/v1"
+)
 
 # Configure page
 st.set_page_config(
@@ -494,12 +497,13 @@ def transcribe_audio(audio_data, sample_rate):
         with open(temp_file, "rb") as audio_file:
             transcript = openai_client.audio.transcriptions.create(
                 model="whisper-1",
-                file=audio_file
+                file=audio_file,
+                response_format="text"
             )
         
         # Clean up temp file
         os.remove(temp_file)
-        return transcript.text
+        return transcript
     except Exception as e:
         st.error(f"Error transcribing audio: {str(e)}")
         return None
