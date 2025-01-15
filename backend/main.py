@@ -62,7 +62,7 @@ app.add_middleware(
 
 # Initialize clients
 groq_client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
-eleven_labs = None  # Initialize on demand with user's API key
+eleven_labs = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 # Constants
 AGENT_ID = "fznwkKVgHrHX2VrqsPr4"
@@ -188,19 +188,18 @@ async def fetch_conversation_history(conversation_id: str, api_key: str) -> dict
         return None
 
 def initialize_conversation(api_key: str = None):
-    global conversation, eleven_labs
+    global conversation
     try:
-        if api_key:
-            eleven_labs = ElevenLabs(api_key=api_key)
-        elif os.getenv("ELEVENLABS_API_KEY"):
-            eleven_labs = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
-        else:
+        if not api_key and not os.getenv("ELEVENLABS_API_KEY"):
             raise ValueError("No API key provided")
+            
+        # Create the ElevenLabs client instance
+        client = ElevenLabs(api_key=api_key or os.getenv("ELEVENLABS_API_KEY"))
         
-        # Initialize conversation with callbacks
+        # Initialize conversation with proper parameters
         conversation = Conversation(
             # API client and agent ID
-            client=eleven_labs,
+            client=client,
             agent_id=AGENT_ID,
             
             # Assume auth is required when API_KEY is set
@@ -209,12 +208,13 @@ def initialize_conversation(api_key: str = None):
             # Use the default audio interface
             audio_interface=DefaultAudioInterface(),
             
-            # Simple callbacks that print the conversation to the console
+            # Callbacks for handling conversation events
             callback_agent_response=lambda response: print(f"Agent: {response}"),
             callback_agent_response_correction=lambda original, corrected: print(f"Agent: {original} -> {corrected}"),
             callback_user_transcript=handle_voice_transcript,
             callback_latency_measurement=lambda latency: print(f"Latency: {latency}ms")
         )
+        
         print("Conversation initialized successfully")
         return True
     except Exception as e:
@@ -351,7 +351,6 @@ async def start_conversation(
         # End any existing conversation
         if conversation:
             try:
-                print("Ending existing conversation...")
                 conversation.end_session()
                 if conversation_thread and conversation_thread.is_alive():
                     conversation_thread.join(timeout=5)
@@ -360,46 +359,31 @@ async def start_conversation(
             conversation = None
             conversation_thread = None
         
-        # Initialize ElevenLabs client
-        print("Initializing ElevenLabs client...")
-        eleven_labs = ElevenLabs(api_key=api_key)
-        
-        # Initialize conversation with callbacks
-        print("Setting up conversation...")
-        conversation = Conversation(
-            client=eleven_labs,
-            agent_id=AGENT_ID,
-            requires_auth=True,
-            audio_interface=DefaultAudioInterface(),
-            callback_agent_response=lambda response: print(f"Agent: {response}"),
-            callback_agent_response_correction=lambda original, corrected: print(f"Agent correction: {original} -> {corrected}"),
-            callback_user_transcript=lambda transcript: handle_voice_transcript(transcript),
-            callback_latency_measurement=lambda latency: print(f"Latency: {latency}ms")
-        )
-        
-        print("Starting conversation session...")
-        # Start conversation in a separate thread
-        def run_conversation():
-            try:
-                conversation.start_session()
-            except Exception as e:
-                print(f"Error in conversation thread: {e}")
-                import traceback
-                print(f"Stack trace:\n{traceback.format_exc()}")
-        
-        conversation_thread = threading.Thread(target=run_conversation)
-        conversation_thread.daemon = True
-        conversation_thread.start()
-        
-        print("✓ Conversation started successfully")
-        return {
-            "status": "success",
-            "message": "Conversation started successfully"
-        }
+        # Initialize the conversation
+        if initialize_conversation(api_key):
+            # Start conversation in a separate thread
+            def run_conversation():
+                try:
+                    conversation.start_session()
+                except Exception as e:
+                    print(f"Error in conversation thread: {e}")
+            
+            conversation_thread = threading.Thread(target=run_conversation)
+            conversation_thread.daemon = True
+            conversation_thread.start()
+            
+            return {
+                "status": "success",
+                "message": "Conversation started successfully"
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to initialize conversation"
+            )
+            
     except Exception as e:
         print(f"❌ Error starting conversation: {str(e)}")
-        import traceback
-        print(f"Stack trace:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/end-conversation")
@@ -593,7 +577,10 @@ async def create_backup():
 def handle_shutdown(signum, frame):
     global conversation
     if conversation:
-        conversation.end_session()
+        try:
+            conversation.end_session()
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
 
 signal.signal(signal.SIGINT, handle_shutdown)
 
