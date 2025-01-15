@@ -8,3 +8,5 @@ openai>=1.40.0
 sounddevice
 soundfile
 numpy 
+elevenlabs
+elevenlabs[pyaudio]

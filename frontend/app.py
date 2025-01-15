@@ -556,58 +556,28 @@ else:
         logout()
         st.rerun()
     
-    # Three-column layout
-    col1, col2, col3 = st.columns([2, 3, 2])
-    
     # Left panel - Conversation History
+    st.sidebar.subheader("Activity History")
+    st.sidebar.markdown('<div class="feature-explanation">View your past activities and track your journey over time.</div>', unsafe_allow_html=True)
+    # Fetch activities from backend
+    activities = get_user_activities()
+    if activities:
+        for activity in reversed(activities):  # Show most recent first
+            st.sidebar.markdown(f"""
+            <div class="chat-message">
+                <small>{activity['timestamp']}</small><br>
+                <strong>{activity.get('category', 'Personal')}</strong><br>
+                {activity['raw_text']}
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.sidebar.info("No activities logged yet")
+
+    # Main content area - Two columns for chat/voice and visualizations
+    col1, col2 = st.columns([3, 2])
+
+    # Left column - Activity Logging
     with col1:
-        st.subheader("Activity History")
-        st.markdown('<div class="feature-explanation">View your past activities and track your journey over time.</div>', unsafe_allow_html=True)
-        # Fetch activities from backend
-        activities = get_user_activities()
-        if activities:
-            for activity in reversed(activities):  # Show most recent first
-                st.markdown(f"""
-                <div class="chat-message">
-                    <small>{activity['timestamp']}</small><br>
-                    <strong>{activity.get('category', 'Personal')}</strong><br>
-                    {activity['raw_text']}
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("No activities logged yet")
-    
-    # Center panel - Voice Assistant
-    with col2:
-        st.markdown(
-            """
-            <style>
-            .chat-message {
-                background-color: #1E1E1E;
-                border-radius: 4px;
-                padding: 10px;
-                margin-bottom: 10px;
-            }
-            .chat-message small {
-                color: #666666;
-            }
-            .chat-message strong {
-                color: #4ECDC4;
-            }
-            textarea {
-                color: #A0A0A0 !important;
-                background-color: #1E1E1E !important;
-                border: 1px solid #333333 !important;
-                border-radius: 4px !important;
-                padding: 8px !important;
-            }
-            textarea::placeholder {
-                color: #666666 !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
         st.subheader("Log Activity")
         st.markdown('<div class="feature-explanation">Record your activities through text or voice input to keep track of your daily accomplishments.</div>', unsafe_allow_html=True)
         
@@ -615,7 +585,7 @@ else:
         text_tab, voice_tab = st.tabs(["Text Input", "Voice Input"])
         
         with text_tab:
-            # Existing text input form
+            # Text input form
             with st.form(key='activity_form', clear_on_submit=True):
                 user_input = st.text_area("Enter your activity:")
                 submit_button = st.form_submit_button("Send")
@@ -627,153 +597,117 @@ else:
                         st.error("Error logging activity")
         
         with voice_tab:
-            col1, col2 = st.columns([3, 1])
-            with col1:
+            col_a, col_b = st.columns([3, 1])
+            with col_a:
                 st.write("Click 'Record' to start recording your activity (10 seconds)")
-            with col2:
+            with col_b:
                 if st.button("🎤 Record", key="record_button"):
-                    # Record audio
                     audio_data, sample_rate = record_audio()
                     if audio_data is not None:
-                        # Transcribe audio
                         transcribed_text = transcribe_audio(audio_data, sample_rate)
                         if transcribed_text:
                             st.info(f"Transcribed text: {transcribed_text}")
-                            # Log the transcribed activity
                             if send_text_activity(transcribed_text):
                                 st.success("Voice activity logged successfully!")
                             else:
                                 st.error("Error logging voice activity")
-        
 
-        st.divider()
-        
-        st.subheader("AI Chat Assistant")
-        st.markdown('<div class="feature-explanation">Get personalized insights and answers about your activities from our AI assistant.</div>', unsafe_allow_html=True)
-        if "chat_messages" not in st.session_state:
-            st.session_state.chat_messages = []
-        
-        # Display chat messages
-        for message in st.session_state.chat_messages:
-            with st.chat_message(message["role"]):
-                st.write(message["content"])
-        
-        # Chat input
-        if prompt := st.chat_input("Ask me anything..."):
-            # Add user message to chat
-            st.session_state.chat_messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.write(prompt)
-            
-            try:
-                # Get user activities for context
-                activities = get_user_activities()
-                if activities:
-                    # Format activities for better context
-                    activities_context = "Here are the user's recent activities:\n" + "\n".join([
-                        f"- {activity['timestamp']}: {activity.get('raw_text', '')} (Category: {activity.get('category', 'Personal')})"
-                        for activity in activities[-10:]  # Last 10 activities
-                    ])
-                else:
-                    activities_context = "No previous activities found."
-                
-                # Get response from Groq
-                response = groq_client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": """You are a helpful AI assistant for VibeTrack, an activity tracking app. 
-                         Help users understand their activities, suggest improvements, and provide insights.
-                         You have access to the user's activity history and can analyze patterns to provide personalized recommendations.
-                         When analyzing social activities or meetings, consider the timing patterns in the user's history."""},
-                        {"role": "system", "content": activities_context},
-                        {"role": "user", "content": prompt}
-                    ],
-                    model="mixtral-8x7b-32768",
-                    temperature=0.7,
-                    max_tokens=1024
-                )
-                
-                # Add assistant response to chat
-                assistant_response = response.choices[0].message.content
-                st.session_state.chat_messages.append({"role": "assistant", "content": assistant_response})
-                with st.chat_message("assistant"):
-                    st.write(assistant_response)
-            except Exception as e:
-                st.error(f"Error getting response: {str(e)}")
-                print(f"Detailed error: {str(e)}")  # For debugging
-
-        st.divider()
-        
-        st.subheader("Voice Assistant")
-        st.markdown('<div class="feature-explanation">Enjoy heartfelt conversations with our AI, speaking like your granny in Hindi or English, offering motivational advice and uplifting your spirit every day.</div>', unsafe_allow_html=True)
-        # Embed ElevenLabs widget with proper styling and configuration
-        st.components.v1.html("""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                    .widget-container {
-                        width: 100%;
-                        min-height: 400px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        background: transparent;
-                    }
-                    elevenlabs-convai {
-                        width: 100%;
-                        height: 100%;
-                        border-radius: 8px;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="widget-container">
-                    <elevenlabs-convai 
-                        agent-id="fznwkKVgHrHX2VrqsPr4"
-                        debug="true"
-                        allow-mic="true"
-                        allow-camera="false"
-                        allow-messages="true"
-                        allow-fullscreen="true"
-                        style="width: 100%; height: 400px;"
-                    ></elevenlabs-convai>
-                </div>
-                <script 
-                    src="https://elevenlabs.io/convai-widget/index.js" 
-                    async 
-                    type="text/javascript"
-                ></script>
-            </body>
-            </html>
-        """, height=450)
-    
-    # Right panel - Insights
-    with col3:
+    # Right column - Insights and Visualizations
+    with col2:
         st.subheader("Insights")
         st.markdown('<div class="feature-explanation">Visualize your activity patterns and get meaningful insights about your habits.</div>', unsafe_allow_html=True)
-        if st.button("Refresh"):
+        
+        # Make refresh button more prominent
+        st.markdown("""
+            <style>
+            div[data-testid="stButton"] button {
+                background: linear-gradient(135deg, #9D4EDD, #6C63FF);
+                color: white;
+                font-weight: bold;
+                border-radius: 20px;
+                padding: 0.5rem 1rem;
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        refresh_button = st.button("🔄 Refresh Insights", key="refresh_viz")
+        
+        # Function to load visualization data
+        def load_visualization_data():
             headers = {}
             if st.session_state.auth_token:
                 headers["Authorization"] = f"Bearer {st.session_state.auth_token}"
             
-            response = requests.get(f"{API_URL}/visualizations", headers=headers)
-            if response.status_code == 200:
-                data = response.json().get("data", {})
-                stats = data.get("stats", {})
+            try:
+                response = requests.get(f"{API_URL}/visualizations", headers=headers)
+                if response.status_code == 200:
+                    return response.json().get("data", {})
+                return None
+            except Exception as e:
+                st.error(f"Error fetching visualization data: {str(e)}")
+                return None
+
+        # Load data either on refresh or initially
+        if "viz_data" not in st.session_state or refresh_button:
+            with st.spinner("Loading insights..."):
+                st.session_state.viz_data = load_visualization_data()
+
+        # Display visualizations if data is available
+        if st.session_state.viz_data:
+            data = st.session_state.viz_data
+            stats = data.get("stats", {})
+            
+            # Category Distribution
+            st.markdown('<div class="visualization-card">', unsafe_allow_html=True)
+            st.subheader("Activity Distribution")
+            
+            distribution = stats.get("distribution", {})
+            if distribution:
+                fig = go.Figure(data=[go.Pie(
+                    labels=list(distribution.keys()),
+                    values=list(distribution.values()),
+                    marker=dict(colors=[stats.get("color_mapping", {}).get(cat, "#808080") for cat in distribution.keys()]),
+                    hole=0.3
+                )])
+                fig.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    showlegend=True,
+                    legend=dict(
+                        font=dict(color='white'),
+                        bgcolor='rgba(0,0,0,0)'
+                    ),
+                    margin=dict(t=30, b=30, l=30, r=30)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No activity data available yet")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Activity Patterns
+            st.markdown('<div class="visualization-card">', unsafe_allow_html=True)
+            st.subheader("Activity Patterns")
+            
+            # Daily patterns
+            daily_patterns = stats.get("daily_patterns", {})
+            if daily_patterns:
+                daily_data = []
+                for day, categories in daily_patterns.items():
+                    for category, count in categories.items():
+                        daily_data.append({
+                            "Day": day,
+                            "Category": category,
+                            "Count": count
+                        })
                 
-                # Category Distribution
-                st.markdown('<div class="visualization-card">', unsafe_allow_html=True)
-                st.write("Activity Distribution")
-                
-                distribution = stats.get("distribution", {})
-                if distribution:
-                    fig = go.Figure(data=[go.Pie(
-                        labels=list(distribution.keys()),
-                        values=list(distribution.values()),
-                        marker=dict(colors=[stats.get("color_mapping", {}).get(cat, "#808080") for cat in distribution.keys()])
-                    )])
-                    fig.update_layout(
+                if daily_data:
+                    df_daily = pd.DataFrame(daily_data)
+                    fig_daily = px.bar(df_daily, x="Day", y="Count", color="Category",
+                                     title="Daily Activity Patterns")
+                    fig_daily.update_layout(
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
                         font=dict(color='white'),
@@ -781,54 +715,129 @@ else:
                         legend=dict(
                             font=dict(color='white'),
                             bgcolor='rgba(0,0,0,0)'
-                        )
+                        ),
+                        margin=dict(t=50, b=30, l=30, r=30)
                     )
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("No activity data available yet")
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                # Activity Patterns
-                st.markdown('<div class="visualization-card">', unsafe_allow_html=True)
-                st.write("Activity Patterns")
-                
-                # Daily patterns
-                daily_patterns = stats.get("daily_patterns", {})
-                if daily_patterns:
-                    daily_data = []
-                    for day, categories in daily_patterns.items():
-                        for category, count in categories.items():
-                            daily_data.append({
-                                "Day": day,
-                                "Category": category,
-                                "Count": count
-                            })
-                    
-                    if daily_data:
-                        df_daily = pd.DataFrame(daily_data)
-                        fig_daily = px.bar(df_daily, x="Day", y="Count", color="Category",
-                                         title="Daily Activity Patterns")
-                        fig_daily.update_layout(
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            font=dict(color='white'),
-                            showlegend=True,
-                            legend=dict(
-                                font=dict(color='white'),
-                                bgcolor='rgba(0,0,0,0)'
-                            )
-                        )
-                        st.plotly_chart(fig_daily, use_container_width=True)
-                
-                # Activity Trends
-                trends = data.get("trends", {})
-                if trends:
-                    st.write("Activity Trends")
-                    st.markdown(f"""
-                        - Most active day: {trends.get('most_active_day', 'N/A')}
-                        - Most active hour: {trends.get('most_active_hour', 'N/A')}
-                        - Most common category: {trends.get('most_common_category', 'N/A')}
-                    """)
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.error("Error fetching visualization data") 
+                    st.plotly_chart(fig_daily, use_container_width=True)
+            
+            # Activity Trends
+            trends = data.get("trends", {})
+            if trends:
+                st.subheader("Activity Trends")
+                st.markdown("""
+                    <div style="background-color: rgba(45, 45, 68, 0.7); padding: 20px; border-radius: 10px; margin-top: 10px;">
+                        <h4 style="color: #E9D5FF; margin-bottom: 15px;">Summary</h4>
+                        <ul style="color: white; list-style-type: none; padding-left: 0;">
+                            <li>🗓️ Most active day: {}</li>
+                            <li>⏰ Most active hour: {}</li>
+                            <li>📊 Most common category: {}</li>
+                        </ul>
+                    </div>
+                """.format(
+                    trends.get('most_active_day', 'N/A'),
+                    trends.get('most_active_hour', 'N/A'),
+                    trends.get('most_common_category', 'N/A')
+                ), unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("Click the refresh button above to load your activity insights!")
+
+    # Divider between sections
+    st.divider()
+
+    # AI Chat Assistant (outside of any container)
+    st.subheader("AI Chat Assistant")
+    st.markdown('<div class="feature-explanation">Get personalized insights and answers about your activities from our AI assistant.</div>', unsafe_allow_html=True)
+
+    # Initialize chat messages in session state
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = []
+
+    # Display chat messages
+    for message in st.session_state.chat_messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+    # Chat input (outside of any container)
+    if prompt := st.chat_input("Ask me anything about your activities..."):
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.write(prompt)
+        
+        try:
+            # Get user activities for context
+            activities = get_user_activities()
+            activities_context = "Here are your recent activities:\n" + "\n".join([
+                f"- {activity['timestamp']}: {activity.get('raw_text', '')} (Category: {activity.get('category', 'Personal')})"
+                for activity in activities[-10:]
+            ]) if activities else "No previous activities found."
+            
+            # Get response from Groq
+            response = groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": """You are a helpful AI assistant for VibeTrack, an activity tracking app. 
+                     Help users understand their activities, suggest improvements, and provide insights."""},
+                    {"role": "system", "content": activities_context},
+                    {"role": "user", "content": prompt}
+                ],
+                model="mixtral-8x7b-32768",
+                temperature=0.7,
+                max_tokens=1024
+            )
+            
+            assistant_response = response.choices[0].message.content
+            st.session_state.chat_messages.append({"role": "assistant", "content": assistant_response})
+            with st.chat_message("assistant"):
+                st.write(assistant_response)
+        except Exception as e:
+            st.error(f"Error getting response: {str(e)}")
+
+    # Divider between sections
+    st.divider()
+
+    # Voice Assistant
+    st.subheader("Voice Assistant")
+    st.markdown('<div class="feature-explanation">Enjoy heartfelt conversations with our AI, speaking like your granny in Hindi or English, offering motivational advice and uplifting your spirit every day.</div>', unsafe_allow_html=True)
+    
+    # ElevenLabs widget
+    st.components.v1.html("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                .widget-container {
+                    width: 100%;
+                    min-height: 400px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    background: transparent;
+                }
+                elevenlabs-convai {
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 8px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="widget-container">
+                <elevenlabs-convai 
+                    agent-id="fznwkKVgHrHX2VrqsPr4"
+                    debug="true"
+                    allow-mic="true"
+                    allow-camera="false"
+                    allow-messages="true"
+                    allow-fullscreen="true"
+                    style="width: 100%; height: 400px;"
+                ></elevenlabs-convai>
+            </div>
+            <script 
+                src="https://elevenlabs.io/convai-widget/index.js" 
+                async 
+                type="text/javascript"
+            ></script>
+        </body>
+        </html>
+    """, height=450) 
