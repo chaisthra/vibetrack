@@ -61,7 +61,7 @@ app.add_middleware(
 )
 
 # Initialize clients
-groq_client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_client = groq.Client(api_key=os.getenv("GROQ_API_KEY"))
 eleven_labs = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 # Constants
@@ -942,6 +942,22 @@ async def get_activities(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         print(f"Error fetching activities: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/")
+async def root():
+    """Root endpoint that returns basic API information."""
+    return {
+        "name": "VibeTrack API",
+        "version": "1.0.0",
+        "status": "running",
+        "documentation": "/docs",
+        "health_check": "/health"
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for the API."""
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 if __name__ == "__main__":
     import uvicorn

@@ -18,6 +18,9 @@ from openai import OpenAI
 # Load environment variables
 load_dotenv()
 
+# Configure backend URL
+BACKEND_URL = os.getenv("BACKEND_URL", "https://vibetrack-backend.hf.space")
+
 # Initialize Groq client
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -258,9 +261,6 @@ if "user" not in st.session_state:
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
-# API endpoints
-API_URL = "http://localhost:8000"
-
 def get_auth_header():
     if st.session_state.auth_token:
         return {"Authorization": f"Bearer {st.session_state.auth_token}"}
@@ -270,7 +270,7 @@ def login(username: str, password: str) -> bool:
     try:
         # Attempt login
         response = requests.post(
-            f"{API_URL}/auth/login",
+            f"{BACKEND_URL}/auth/login",
             json={"username": username, "password": password}
         )
         
@@ -281,7 +281,7 @@ def login(username: str, password: str) -> bool:
             
             # Fetch user profile with the new token
             profile_response = requests.get(
-                f"{API_URL}/users/me",
+                f"{BACKEND_URL}/users/me",
                 headers={"Authorization": f"Bearer {data['access_token']}"}
             )
             
@@ -307,7 +307,7 @@ def login(username: str, password: str) -> bool:
 def signup(username: str, email: str, password: str, full_name: str) -> bool:
     try:
         response = requests.post(
-            f"{API_URL}/auth/signup",
+            f"{BACKEND_URL}/auth/signup",
             json={
                 "username": username,
                 "email": email,
@@ -320,7 +320,7 @@ def signup(username: str, email: str, password: str, full_name: str) -> bool:
             st.session_state.auth_token = data["access_token"]
             # Get user profile after signup
             profile_response = requests.get(
-                f"{API_URL}/users/me",
+                f"{BACKEND_URL}/users/me",
                 headers={"Authorization": f"Bearer {data['access_token']}"}
             )
             if profile_response.status_code == 200:
@@ -343,7 +343,7 @@ def send_text_activity(text):
         
         # Send activity to backend for processing and storage
         response = requests.post(
-            f"{API_URL}/log-text", 
+            f"{BACKEND_URL}/log-text", 
             json={"text": text},
             headers=headers
         )
@@ -370,7 +370,7 @@ def get_user_activities():
             headers["Authorization"] = f"Bearer {st.session_state.auth_token}"
         
         # Get activities from backend storage
-        response = requests.get(f"{API_URL}/activities", headers=headers)
+        response = requests.get(f"{BACKEND_URL}/activities", headers=headers)
         if response.status_code == 200:
             return response.json().get("activities", [])
         return []
@@ -386,7 +386,7 @@ def send_voice_activity(audio_data):
         headers["X-API-Key"] = st.session_state.elevenlabs_api_key
     
     response = requests.post(
-        f"{API_URL}/log-voice",
+        f"{BACKEND_URL}/log-voice",
         files={"audio": audio_data},
         headers=headers
     )
@@ -404,7 +404,7 @@ def send_voice_activity(audio_data):
 def get_categories():
     try:
         response = requests.get(
-            f"{API_URL}/categories",
+            f"{BACKEND_URL}/categories",
             headers=get_auth_header()
         )
         if response.status_code == 200:
@@ -423,7 +423,7 @@ def toggle_voice_agent():
         
         if not st.session_state.recording:
             response = requests.post(
-                f"{API_URL}/start-conversation",
+                f"{BACKEND_URL}/start-conversation",
                 headers=headers
             )
             if response.status_code == 200:
@@ -434,7 +434,7 @@ def toggle_voice_agent():
                 st.error(f"Error starting voice agent: {response.text}")
         else:
             response = requests.post(
-                f"{API_URL}/end-conversation",
+                f"{BACKEND_URL}/end-conversation",
                 headers=headers
             )
             if response.status_code == 200:
@@ -641,7 +641,7 @@ else:
                 headers["Authorization"] = f"Bearer {st.session_state.auth_token}"
             
             try:
-                response = requests.get(f"{API_URL}/visualizations", headers=headers)
+                response = requests.get(f"{BACKEND_URL}/visualizations", headers=headers)
                 if response.status_code == 200:
                     return response.json().get("data", {})
                 return None

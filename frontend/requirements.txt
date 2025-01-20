@@ -1,0 +1,13 @@
+streamlit==1.29.0
+plotly==5.18.0
+requests==2.31.0
+python-dotenv==1.0.0 
+pandas==2.1.4
+groq==0.3.0
+pyaudio==0.2.14
+sounddevice==0.4.6
+soundfile==0.12.1
+numpy==1.24.3
+elevenlabs==1.50.3
+scipy>=1.11.4
+wave>=0.0.2

@@ -1,0 +1,249 @@
+[
+  {
+    "type": "text",
+    "raw_text": "i played football for 3 hours from 4pm",
+    "processed_text": "i played football for 3 hours from 4pm",
+    "category": "general",
+    "timestamp": "2025-01-12T22:59:16.514533",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played foot ball for 4 minutes",
+    "processed_text": "i played foot ball for 4 minutes",
+    "category": "general",
+    "timestamp": "2025-01-12T23:05:55.624426",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "when did i play football",
+    "processed_text": "when did i play football",
+    "category": "general",
+    "timestamp": "2025-01-12T23:10:11.113573",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "I played football for 2 hours fron 12pm",
+    "processed_text": "I played football for 2 hours fron 12pm",
+    "category": "general",
+    "timestamp": "2025-01-12T23:23:06.116520",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played violin yesterday for 20 minutes from 11pm",
+    "processed_text": "i played violin yesterday for 20 minutes from 11pm",
+    "category": "general",
+    "timestamp": "2025-01-12T23:36:57.706005",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played football for 4 hours fro 12pm",
+    "processed_text": "i played football for 4 hours fro 12pm",
+    "category": "general",
+    "timestamp": "2025-01-12T23:39:48.482580",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played for 3 hours yesterday",
+    "processed_text": "i played for 3 hours yesterday",
+    "category": "general",
+    "timestamp": "2025-01-12T23:44:54.445841",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played foot ball yesterday for 4 hours from 5 pm",
+    "processed_text": "i played foot ball yesterday for 4 hours from 5 pm",
+    "category": "general",
+    "timestamp": "2025-01-13T00:15:24.991707",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i did research(4am to 5am)  and played volly ball( 9pm to 4pm)",
+    "processed_text": "i did research(4am to 5am)  and played volly ball( 9pm to 4pm)",
+    "category": "general",
+    "timestamp": "2025-01-13T00:19:54.124800",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i went to college in the morning",
+    "processed_text": "i went to college in the morning",
+    "category": "general",
+    "timestamp": "2025-01-13T00:20:40.936773",
+    "source": "text"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played foot ball for 2 hours after school in evening 7pm",
+    "processed_text": "i played foot ball for 2 hours after school in evening 7pm",
+    "category": "general",
+    "timestamp": "2025-01-13T01:03:46.277710",
+    "source": "text",
+    "user_id": "chaithra3"
+  },
+  {
+    "type": "text",
+    "raw_text": "i ate food at 3pm on saturday",
+    "processed_text": "i ate food at 3pm on saturday",
+    "category": "general",
+    "timestamp": "2025-01-13T01:05:15.276232",
+    "source": "text",
+    "user_id": "chaithra3"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played football with my friends on Sunday from morning 6am to 9am",
+    "processed_text": "i played football with my friends on Sunday from morning 6am to 9am",
+    "category": "general",
+    "timestamp": "2025-01-13T01:39:29.218107",
+    "source": "text",
+    "user_id": "demo_user"
+  },
+  {
+    "type": "text",
+    "raw_text": "i am working on my project from 3 hours since 5pm",
+    "processed_text": "i am working on my project from 3 hours since 5pm",
+    "category": "Personal",
+    "timestamp": "2025-01-13T01:46:15.611989",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "i met my friends this afternoon at 2pm",
+    "processed_text": "met friends this afternoon at 2pm",
+    "category": "Social",
+    "timestamp": "2025-01-13T01:46:44.678787",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "Thank you so much for watching until the end.",
+    "processed_text": "Thank you so much for watching until the end.",
+    "category": "Personal",
+    "timestamp": "2025-01-13T02:22:08.718101",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "I played football with my friends yesterday evening.",
+    "processed_text": "played football with friends",
+    "category": "Social",
+    "timestamp": "2025-01-13T02:22:47.219801",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "i watched 100x lectures for 4 hours on tuesday",
+    "processed_text": "watched 100x lectures for 4 hours on tuesday",
+    "category": "Learning",
+    "timestamp": "2025-01-13T02:32:04.508076",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "I painted a painting of da Vinci yesterday for one hour.",
+    "processed_text": "painted a painting of da Vinci yesterday for one hour",
+    "category": "Creative",
+    "timestamp": "2025-01-13T02:33:26.565410",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "i played football for 3 hours in the evening on sunday",
+    "processed_text": "played football for 3 hours in the evening on Sunday",
+    "category": "Health",
+    "timestamp": "2025-01-13T03:37:10.417964",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "I played violin at my friend's place on Tuesday.",
+    "processed_text": "played violin at friend's place on Tuesday",
+    "category": "Social",
+    "timestamp": "2025-01-13T03:37:45.960900",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "Hi, I played games yesterday.",
+    "processed_text": "Hi, I played games yesterday.",
+    "category": "Personal",
+    "timestamp": "2025-01-13T11:35:20.988166",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "Hi, I played games yesterday.\n",
+    "processed_text": "Hi, I played games yesterday.",
+    "category": "Personal",
+    "timestamp": "2025-01-13T13:40:53.411137",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "I played football yesterday.",
+    "processed_text": "played football",
+    "category": "Health",
+    "timestamp": "2025-01-15T11:12:27.293947",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "I ate good food yesterday 2 pm",
+    "processed_text": "ate good food",
+    "category": "Personal",
+    "timestamp": "2025-01-15T11:12:45.352833",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "i had lunch today",
+    "processed_text": "i had lunch today",
+    "category": "Personal",
+    "timestamp": "2025-01-15T11:25:29.594711",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  },
+  {
+    "type": "text",
+    "raw_text": "I am going to play football today night.",
+    "processed_text": "play football",
+    "category": "Health",
+    "timestamp": "2025-01-15T11:25:48.760215",
+    "source": "text",
+    "user_id": "demo_user",
+    "user_email": "demo@example.com"
+  }
+]
